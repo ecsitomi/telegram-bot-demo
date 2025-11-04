@@ -283,8 +283,8 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     """Bot indítása"""
-    # FONTOS: Itt add meg a saját bot tokened!
-    BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
+    # Token betöltése a config.py fájlból
+    from config import BOT_TOKEN
     
     # Application építése
     application = Application.builder().token(BOT_TOKEN).build()
