@@ -13,6 +13,7 @@ Ez egy átfogó Telegram bot demo, amely bemutatja a Telegram botok főbb képes
 ### 2. Média Kezelés
 - **Videó küldés**: Demonstrálja a videó megosztás képességét
 - **Hang küldés**: Hangfájlok és zene küldése
+- **Kép küldés**: Fotók és grafikai elemek megosztása
 
 ### 3. Interaktív Funkciók
 - **Inline gombok**: Azonnali válaszok és navigáció

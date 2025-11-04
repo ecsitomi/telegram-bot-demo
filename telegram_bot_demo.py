@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
@@ -25,26 +26,60 @@ WAITING_NAME, WAITING_COMPANY = range(2)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Üdvözlő üzenet és főmenü"""
     user = update.effective_user
-    welcome_text = (
-        f"👋 Szia {user.first_name}!\n\n"
-        f"🤖 Telegram Bot Demo vagyok!\n\n"
-        f"Készítette: Ecsedi Tamás\n"
-        f"Verzió: 1.0 Proto Demo\n\n"
-        f"Íme, amit tudok neked bemutatni:"
+    
+    # Ellenőrizzük, hogy első alkalom-e
+    is_first_time = context.user_data.get('has_started', False) == False
+    context.user_data['has_started'] = True
+    
+    if is_first_time:
+        # Első találkozás - Meleg üdvözlés
+        first_greeting = (
+            f"🎉 Üdvözöllek a fedélzeten, {user.first_name}! 🎉\n\n"
+            f"Nagyon örülök, hogy eljöttél! 👋\n\n"
+            f"🤖 Én egy okos Telegram bot vagyok, aki rengeteg dolgot tudok.\n\n"
+            f"⚡️ Minden automatikus, gyors és egyszerű - "
+            f"pont úgy, ahogy egy modern digitális asszisztensnek működnie kell.\n\n"
+            f"🎯 Kíváncsi vagy, mire vagyok képes?"
+        )
+        await update.message.reply_text(first_greeting)
+        
+        # Rövid várakozás
+        await asyncio.sleep(1.5)
+    
+    # Bemutatkozás (minden alkalommal)
+    intro_text = (
+        f"🚀 **Hadd mutassam be magam!**\n\n"
+        f"📱 **Interaktív gombok** - Nincs gépelés, csak kattintás\n"
+        f"🎬 **Multimédia** - Videók, képek, hangok egy mozdulattal\n"
+        f"💬 **Beszélgetések** - Intelligens, többlépcsős kommunikáció\n"
+        f"⏰ **Automatizálás** - Emlékeztetők, időzített üzenetek\n"
+        f"📊 **Adatkezelés** - Minden adat biztonságban\n\n"
+        f"✨ Minden funkció azonnal elérhető!"
     )
-
+    await update.message.reply_text(intro_text, parse_mode='Markdown')
+    
+    # Rövid várakozás
+    await asyncio.sleep(1)
+    
+    # Főmenü
+    welcome_text = (
+        f"🎯 **Mire vagy kíváncsi?**\n\n"
+        f"Válassz bátran - mindent kipróbálhatsz! 👇"
+    )
+    
     keyboard = [
         [InlineKeyboardButton("📹 Videó küldés", callback_data="send_video")],
         [InlineKeyboardButton("🎵 Hang küldés", callback_data="send_audio")],
+        [InlineKeyboardButton("🖼️ Kép küldés", callback_data="send_photo")],
         [InlineKeyboardButton("💬 Interaktív beszélgetés", callback_data="start_conversation")],
         [InlineKeyboardButton("⏰ Emlékeztető beállítás", callback_data="set_reminder")],
         [InlineKeyboardButton("📊 Statisztikák", callback_data="show_stats")],
         [InlineKeyboardButton("ℹ️ Információ", callback_data="info")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await update.message.reply_text(welcome_text, reply_markup=reply_markup)
-
+    
+    await update.message.reply_text(welcome_text, reply_markup=reply_markup, parse_mode='Markdown')
+    
     # Statisztika növelése
     context.bot_data['total_starts'] = context.bot_data.get('total_starts', 0) + 1
 
@@ -53,7 +88,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Inline gombok kezelése"""
     query = update.callback_query
     await query.answer()  # Kötelező!
-
+    
     if query.data == "send_video":
         await query.edit_message_text("📹 Videó küldése folyamatban...")
         # YouTube videó küldése
@@ -65,7 +100,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                  "és média tartalmak megosztására!"
         )
         await show_back_button(query.message.chat_id, context)
-
+        
     elif query.data == "send_audio":
         await query.edit_message_text("🎵 Hang küldése folyamatban...")
         try:
@@ -75,7 +110,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     chat_id=query.message.chat_id,
                     audio=audio_file,
                     title="Demo Zene",
-                    performer="Ecsitomi Bot",
+                    performer="Sales Bot",
                     caption="🎼 A bot képes hangfájlok, zenék küldésére!"
                 )
         except FileNotFoundError:
@@ -85,7 +120,26 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                      "Kérlek töltsd fel a fájlt ugyanoda, ahol a bot fut."
             )
         await show_back_button(query.message.chat_id, context)
-
+        
+    elif query.data == "send_photo":
+        await query.edit_message_text("🖼️ Kép küldése folyamatban...")
+        try:
+            # JPG fájl küldése
+            with open("picture.png", "rb") as photo_file:
+                await context.bot.send_photo(
+                    chat_id=query.message.chat_id,
+                    photo=photo_file,
+                    caption="📸 A bot képes képek, fotók és grafikai elemek küldésére!\n\n"
+                            "Támogatott formátumok: JPG, PNG, GIF, stb."
+                )
+        except FileNotFoundError:
+            await context.bot.send_message(
+                chat_id=query.message.chat_id,
+                text="❌ A picture.jpg fájl nem található!\n\n"
+                     "Kérlek töltsd fel a fájlt ugyanoda, ahol a bot fut."
+            )
+        await show_back_button(query.message.chat_id, context)
+        
     elif query.data == "start_conversation":
         await query.edit_message_text(
             "💬 Interaktív beszélgetés:\n\n"
@@ -93,10 +147,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "hogy elindítsd az interaktív regisztrációs folyamatot!"
         )
         await show_back_button(query.message.chat_id, context)
-
+        
     elif query.data == "set_reminder":
         chat_id = query.message.chat_id
-
+        
         # Emlékeztető beállítása 30 másodperc múlva
         context.job_queue.run_once(
             reminder_callback,
@@ -104,7 +158,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chat_id=chat_id,
             name=f"reminder_{chat_id}"
         )
-
+        
         await query.edit_message_text(
             "⏰ Emlékeztető beállítva!\n\n"
             "30 másodperc múlva küldök neked egy emlékeztetőt.\n\n"
@@ -114,11 +168,11 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• Napi időzített üzenetekre"
         )
         await show_back_button(query.message.chat_id, context)
-
+        
     elif query.data == "show_stats":
         total_starts = context.bot_data.get('total_starts', 0)
         total_conversations = context.bot_data.get('total_conversations', 0)
-
+        
         stats_text = (
             f"📊 Bot Statisztikák:\n\n"
             f"🚀 Összes indítás: {total_starts}\n"
@@ -129,7 +183,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await query.edit_message_text(stats_text)
         await show_back_button(query.message.chat_id, context)
-
+        
     elif query.data == "info":
         info_text = (
             "ℹ️ Bot Képességek:\n\n"
@@ -143,11 +197,11 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "✅ Hiba kezelés\n\n"
             "🔧 Technológia: Python Telegram Bot (PTB)\n"
             "📦 Verzió: 22.5+"
-            "\nA parancsok megtekintéséhez használd a /help utasítást!"
+            "\n\nA parancsok megtekintéséhez használd a /help utasítást!"
         )
         await query.edit_message_text(info_text)
         await show_back_button(query.message.chat_id, context)
-
+        
     elif query.data == "back_to_menu":
         welcome_text = (
             "🤖 Főmenü\n\n"
@@ -156,6 +210,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = [
             [InlineKeyboardButton("📹 Videó küldés", callback_data="send_video")],
             [InlineKeyboardButton("🎵 Hang küldés", callback_data="send_audio")],
+            [InlineKeyboardButton("🖼️ Kép küldés", callback_data="send_photo")],
             [InlineKeyboardButton("💬 Interaktív beszélgetés", callback_data="start_conversation")],
             [InlineKeyboardButton("⏰ Emlékeztető beállítás", callback_data="set_reminder")],
             [InlineKeyboardButton("📊 Statisztikák", callback_data="show_stats")],
@@ -200,7 +255,7 @@ async def receive_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Név fogadása"""
     name = update.message.text
     context.user_data['name'] = name
-
+    
     await update.message.reply_text(
         f"Köszönöm, {name}! 👍\n\n"
         f"Milyen cégnél dolgozol?"
@@ -212,12 +267,12 @@ async def receive_company(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Cég fogadása"""
     company = update.message.text
     name = context.user_data.get('name', 'Ismeretlen')
-
+    
     context.user_data['company'] = company
-
+    
     # Statisztika növelése
     context.bot_data['total_conversations'] = context.bot_data.get('total_conversations', 0) + 1
-
+    
     await update.message.reply_text(
         f"✅ Sikeres regisztráció!\n\n"
         f"📝 Adatok:\n"
@@ -266,7 +321,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Info parancs"""
     user = update.effective_user
     user_info = context.user_data.get('name', 'Nincs mentve')
-
+    
     info_text = (
         f"👤 Felhasználói információk:\n\n"
         f"Telegram név: {user.first_name}\n"
@@ -283,7 +338,7 @@ async def info_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     """Hibakezelő"""
     logger.error("Hiba történt:", exc_info=context.error)
-
+    
     if isinstance(update, Update) and update.effective_message:
         await update.effective_message.reply_text(
             "❌ Hiba történt a feldolgozás során.\n\n"
@@ -295,10 +350,10 @@ def main():
     """Bot indítása"""
     # Token betöltése a config.py fájlból
     from config import BOT_TOKEN
-
+    
     # Application építése
     application = Application.builder().token(BOT_TOKEN).build()
-
+    
     # ConversationHandler regisztráció
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("regisztracio", start_registration)],
@@ -308,7 +363,7 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel_conversation)]
     )
-
+    
     # Handler-ek hozzáadása
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
@@ -316,10 +371,10 @@ def main():
     application.add_handler(CallbackQueryHandler(button_callback))
     application.add_handler(conv_handler)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo_handler))
-
+    
     # Error handler
     application.add_error_handler(error_handler)
-
+    
     # Bot indítása
     logger.info("Bot indítása...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
